@@ -1,9 +1,12 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleRight } from "@fortawesome/free-solid-svg-icons";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
     <>
+      {/* Hero Section */}
+
       <section className=" bg-[url('/src/assets/trainer.jpg')] min-h-screen flex items-center bg-cover bg-center ">
         <div className="cta  flex flex-col gap-12 w-full p-8 h-[400px]">
           <div className="w-100  text-white ">
@@ -11,14 +14,14 @@ const Home = () => {
               Train Smarter. Get Stronger
             </h1>
             <div className="cta-buttons flex flex-row gap-x-4 mt-12">
-              <a
-                href="/booking"
+              <Link
+                to="/book"
                 className="bg-green-400 text-white px-4 py-2 rounded"
               >
                 Book
-              </a>
+              </Link>
               <a
-                href="/booking"
+                href="#programs"
                 className="bg-gray-400 shadow-lg text-white px-4 py-2 rounded"
               >
                 Learn
@@ -35,8 +38,9 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      <section className=" px-8 py-20 text-white  bg-black ">
+      
+      {/* Programs Section */}
+      <section className=" px-8 py-20 text-white  bg-black " id="programs">
         <div className="max-w-6xl mx-auto text-center ">
           <div className="space-y-4">
             <h2 className="font-semibold text-2xl font-outfit md:text-1xl font-bold">
@@ -62,9 +66,9 @@ const Home = () => {
                   Build muscle and power with progressive resistance training.
                 </p>
                 <div className="flex items-center ">
-                  <a href="/booking" className="text-white mt-2">
+                  < Link to="/book" className="text-white mt-2">
                     Book
-                  </a>
+                  </Link>
                   <FontAwesomeIcon icon={faAngleRight} className="mt-3" />
                 </div>
               </div>
@@ -82,9 +86,9 @@ const Home = () => {
                   sessions.
                 </p>
                 <div className="flex items-center ">
-                  <a href="/booking" className="text-white mt-2 ">
+                  <Link to="/book" className="text-white mt-2 ">
                     Book
-                  </a>
+                  </Link>
                   <FontAwesomeIcon icon={faAngleRight} className="mt-3" />
                 </div>
               </div>
@@ -102,10 +106,10 @@ const Home = () => {
                   guidance.
                 </p>
                 <div className="flex items-center ">
-                  {" "}
-                  <a href="/booking" className="text-white mt-2">
+                
+                  <Link to="/book" className="text-white mt-2">
                     Book
-                  </a>
+                  </Link>
                   <FontAwesomeIcon icon={faAngleRight} className="mt-3" />
                 </div>
               </div>
@@ -114,6 +118,7 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Process Section */}
       <section className="px-8 py-20 text-black bg-white">
         <div className="max-w-6xl text-center mx-auto">
           <div className="space-y-4">
@@ -167,16 +172,13 @@ const Home = () => {
               </p>
             </div>
             <div className="md:col-span-3 mt-12">
-              <a
-                href="/booking"
+              <Link
+                to="/book"
                 className=" hover:bg-green-400 hover:text-white bg-gray-400 text-black shadow-lg px-4 py-2 rounded mt-8 "
               >
-                Start
-              </a>
-              <a href="/booking" className="  px-4 py-2 rounded mt-8 ">
-                Book
-              </a>
-              <FontAwesomeIcon icon={faAngleRight} className="mt-2" />
+                Start Your Journey
+              </Link>
+             
             </div>
           </div>
         </div>

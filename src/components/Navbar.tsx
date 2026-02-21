@@ -34,7 +34,7 @@ const Navbar = () => {
 
           <li>
             <Link
-              to="/booking"
+              to="/book"
               className="hover:text-green-400 text-underline-offset-4 hover:underline hover:decoration-2 hover:decoration-white"
             >
               Book
@@ -42,7 +42,7 @@ const Navbar = () => {
           </li>
           <li>
             <Link
-              to="/admin"
+              to="/login"
               className="hover:text-green-400 text-underline-offset-4 hover:underline hover:decoration-2 hover:decoration-white"
             >
               Admin
@@ -53,19 +53,19 @@ const Navbar = () => {
             {isOpen && (
               <ul className="absolute rounded-md bg-green-400 p-2 hover:bg-gray-200 text-black font-bold mt-4">
                 <li>
-                  <a href="/AdminLogin">Login</a>
+                  <Link to="/login">Login</Link>
                 </li>
               </ul>
             )}
           </li>
         </ul>
         <div className="sign-in-button">
-          <a
-            href="/signin"
+          <Link
+            to="/client_login"
             className="bg-green-400 text-white px-4 py-2 rounded"
           >
             Sign In
-          </a>
+          </Link>
         </div>
         {/*Hamburger */}
         <button className="md:hidden" onClick={handleClick}>
@@ -85,7 +85,7 @@ const Navbar = () => {
 
             <li>
               <Link
-                to="/booking"
+                to="/book"
                 className="block hover:text-black hover:font-bold"
               >
                 Book
@@ -93,7 +93,7 @@ const Navbar = () => {
             </li>
             <li>
               <Link
-                to="/admin"
+                to="/login"
                 className="block hover:text-black hover:font-bold"
               >
                 Admin

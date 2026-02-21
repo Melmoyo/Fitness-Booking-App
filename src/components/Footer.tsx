@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
-const Footer = () => {
+
+type FooterProps = {
+  className?: string;
+};
+
+const Footer = ({ className = "bg-white text-black" }: FooterProps) => {
   return (
     <>
-      <section className="h-[4rem]  py-6 mt-12">
+      <section className={` py-6  ${className}`}>
         <div className="grid grid-cols-1 container mx-auto text-center">
           <div className="logo text-2xl font-bold">Fitness.io</div>
           <div className="nav">
@@ -20,7 +25,7 @@ const Footer = () => {
                 Services
               </Link>
               <Link
-                to="/about"
+                to="#about"
                 className="px-4 px-4 hover:text-green-400 text-underline-offset-4 hover:decoration-2"
               >
                 About
