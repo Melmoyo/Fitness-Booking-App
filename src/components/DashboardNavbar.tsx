@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "../SupabaseClient";
 {
   /* FontAwesome Icons */
@@ -9,7 +9,7 @@ import { faBars, faXmark } from "@fortawesome/free-solid-svg-icons";
 
 const DashboardNavbar = ({
   role,
-  session,
+
   fullName,
 }: {
   role: string | null;
@@ -26,11 +26,10 @@ const DashboardNavbar = ({
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-     alert("Error" + error.message);
+      alert("Error" + error.message);
       return;
     }
 
-   
     // Navigate to login
     if (role === "trainer") {
       navigate("/login");

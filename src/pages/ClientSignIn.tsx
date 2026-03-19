@@ -4,7 +4,6 @@ import { supabase } from "../SupabaseClient";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { UserAuth } from "../Context/AuthContext";
 
 const SignInSchema = z.object({
   email: z.string().nonempty("Email is required").email("Invalid email format"),
