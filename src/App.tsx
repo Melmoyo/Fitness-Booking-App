@@ -1,10 +1,4 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  useLocation,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Navbar from "./components/Navbar";
@@ -24,11 +18,15 @@ function AppWrapper() {
 
   const { session, role, loading, fullName } = UserAuth();
 
-console.log("APP RENDER:", { loading, session: session?.user?.id ?? "null", role });
+  console.log("APP RENDER:", {
+    loading,
+    session: session?.user?.id ?? "null",
+    role,
+  });
 
-if (loading) {
-  return <LoadingSpinner fullPage/>;
-}
+  if (loading) {
+    return <LoadingSpinner fullPage />;
+  }
 
   // If on the special page, footer is black
   const footerClass = ["/book", "/dashboard"].includes(location.pathname)
@@ -41,7 +39,7 @@ if (loading) {
 
   return (
     <>
-      { showDashboardNavbar  ? (
+      {showDashboardNavbar ? (
         <DashboardNavbar role={role} session={session} fullName={fullName} />
       ) : (
         <Navbar />
@@ -65,7 +63,7 @@ if (loading) {
               </>
             }
           />
-        
+
           <Route
             path="/client_login"
             element={
@@ -87,30 +85,28 @@ if (loading) {
           <Route
             path="/dashboard"
             element={
-           
-           session && role === "trainer" ? 
+              session && role === "trainer" ? (
                 <>
                   <AdminDashboard />
                 </>
-               : 
+              ) : (
                 <Navigate to="/login" replace />
-              
+              )
             }
           />
 
           <Route
             path="/client_dashboard"
             element={
-               loading ? (
-      <div>Loading...</div>  // wait for role to load
-    ) :
-              session && role === "client" ? 
+              loading ? (
+                <div>Loading...</div> // wait for role to load
+              ) : session && role === "client" ? (
                 <>
                   <ClientDashboard />
                 </>
-               : 
+              ) : (
                 <Navigate to="/client_login" replace />
-              
+              )
             }
           />
         </Routes>
@@ -121,10 +117,6 @@ if (loading) {
 }
 
 function App() {
-  return (
-   
-      <AppWrapper />
-
-  );
+  return <AppWrapper />;
 }
 export default App;
