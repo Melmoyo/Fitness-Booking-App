@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState, useEffect } from "react";
 import { supabase } from "../SupabaseClient";
@@ -44,11 +43,15 @@ const CancelSchema = z.object({
 
 type CancelForm = z.infer<typeof CancelSchema>;
 
-
-
 const ClientDashboard = () => {
   //The only values to be in the modal
-  type ModalType = "upcoming" | "past" | "book" | "reschedule" | null;
+  type ModalType =
+    | "upcoming"
+    | "past"
+    | "book"
+    | "reschedule"
+    | null
+    | "cancel";
   interface Sessions {
     id: string;
     date: string;
@@ -57,22 +60,19 @@ const ClientDashboard = () => {
     program: string;
   }
 
-  const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const today = new Date().toISOString().split("T")[0];
   const [selectedModal, setSelectedModal] = useState<ModalType>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [_isModalOpen, setIsModalOpen] = useState(false);
   const [pastSessions, setPastSessions] = useState<Sessions[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Sessions[]>([]);
   const [totalSessions, setTotalSessions] = useState(0);
   const [totalUpcomingSessions, setTotalUpcomingSessions] = useState(0);
   const [totalPastSessions, setTotalPastSessions] = useState(0);
-  const [membershipStatus, setMembershipStatus] = useState("Starter");
-  const [loading, setLoading] = useState(false);
-  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
-const [rescheduleOptions, setRescheduleOptions] = useState<Sessions[]>([]);
-const [cancelOptions, setCancelOptions] = useState<Sessions[]>([]);
-  const [isCancelOpen, setIsCancelOpen] = useState(false);
+  const [membershipStatus, _setMembershipStatus] = useState("Starter");
+  const [_loading, setLoading] = useState(false);
+  const [_isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+  const [rescheduleOptions, setRescheduleOptions] = useState<Sessions[]>([]);
+  const [cancelOptions, setCancelOptions] = useState<Sessions[]>([]);
+  const [_isCancelOpen, _setIsCancelOpen] = useState(false);
   const form = useForm<UserForm>({
     resolver: zodResolver(BookSchema),
   });
@@ -83,108 +83,104 @@ const [cancelOptions, setCancelOptions] = useState<Sessions[]>([]);
     formState: { errors },
   } = form;
 
-const rescheduleForm = useForm<RescheduleForm>({
-  resolver: zodResolver(RescheduleSchema),
-});
-const {
-  register: registerReschedule,
-  handleSubmit: handleRescheduleSubmit,
-  reset: resetReschedule,
-  formState: { errors: rescheduleErrors },
-} = rescheduleForm;
+  const rescheduleForm = useForm<RescheduleForm>({
+    resolver: zodResolver(RescheduleSchema),
+  });
+  const {
+    register: registerReschedule,
+    handleSubmit: handleRescheduleSubmit,
+    reset: resetReschedule,
+    formState: { errors: rescheduleErrors },
+  } = rescheduleForm;
 
-const cancelForm = useForm<CancelForm>({
-  resolver: zodResolver(CancelSchema),
-});
-const {
-  register: registerCancel,
-  handleSubmit: handleCancelSubmit,
-  reset: resetCancel,
-  formState: { errors: cancelErrors },
-} = cancelForm;
-const { session, role, fullName } = UserAuth();
+  const cancelForm = useForm<CancelForm>({
+    resolver: zodResolver(CancelSchema),
+  });
+  const {
+    register: registerCancel,
+    handleSubmit: handleCancelSubmit,
+    reset: resetCancel,
+    formState: { errors: cancelErrors },
+  } = cancelForm;
+  const { session } = UserAuth();
 
-  const fetchPastSessions = async () => {
-    if (!session?.user) return [];
+  // const fetchPastSessions = async () => {
+  //   if (!session?.user) return [];
+
+  //   const { data, error } = await supabase
+  //     .from("bookings")
+  //     .select("*")
+  //     .eq("user_id", session.user.id)
+  //     .lt("booking_date", today);
+
+  //   if (error) {
+  //     alert("Error" + error.message);
+  //     return [];
+  //   }
+
+  //   return data || [];
+  // };
+  // const fetchUpcomingSessions = async () => {
+  //   if (!session?.user) return [];
+
+  //   const { data, error } = await supabase
+  //     .from("bookings")
+  //     .select("*")
+  //     .eq("user_id", session.user.id)
+  //     .gte("booking_date", today);
+
+  //   if (error) {
+  //     alert("Error" + error.message);
+  //     return [];
+  //   }
+
+  //   return data || [];
+  // };
+  const fetchSessionTotals = async () => {
+    if (!session?.user) return;
+
+    const now = new Date();
 
     const { data, error } = await supabase
       .from("bookings")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .lt("booking_date", today);
-
-    if (error) {
-      alert("Error" + error.message);
-      return [];
-    }
-
-    return data || [];
-  };
-  const fetchUpcomingSessions = async () => {
-    if (!session?.user) return [];
-
-    const { data, error } = await supabase
-      .from("bookings")
-      .select("*")
-      .eq("user_id", session.user.id)
-      .gte("booking_date", today);
-      
-
-    if (error) {
-      alert("Error" + error.message);
-      return [];
-    }
-
-    return data || [];
-  };
-const fetchSessionTotals = async () => {
-      if (!session?.user) return ;
-
-      const now = new Date();
-
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(
-          `
+      .select(
+        `
         id,
         booking_date,
         start_time
       `,
-        )
-        .eq("user_id", session.user.id)
-        .neq("status", "cancelled");
+      )
+      .eq("user_id", session.user.id)
+      .neq("status", "cancelled");
 
-      if (error) {
-        alert("Error fetching sessions: " + error.message);
-        return;
-      }
+    if (error) {
+      alert("Error fetching sessions: " + error.message);
+      return;
+    }
 
-      const pastCount = (data || []).filter((item: any) => {
-        const bookingDateTime = new Date(
-          `${item.booking_date}T${item.start_time}`,
-        );
-        return bookingDateTime < now;
-      }).length;
+    const pastCount = (data || []).filter((item: any) => {
+      const bookingDateTime = new Date(
+        `${item.booking_date}T${item.start_time}`,
+      );
+      return bookingDateTime < now;
+    }).length;
 
-      const upcomingCount = (data || []).filter((item: any) => {
-        const bookingDateTime = new Date(
-          `${item.booking_date}T${item.start_time}`,
-        );
-        return bookingDateTime >= now;
-      }).length;
+    const upcomingCount = (data || []).filter((item: any) => {
+      const bookingDateTime = new Date(
+        `${item.booking_date}T${item.start_time}`,
+      );
+      return bookingDateTime >= now;
+    }).length;
 
-      const totalCount = data?.length || 0;
+    const totalCount = data?.length || 0;
 
-      setTotalSessions(totalCount);
-      setTotalPastSessions(pastCount);
-      setTotalUpcomingSessions(upcomingCount);
-    };
+    setTotalSessions(totalCount);
+    setTotalPastSessions(pastCount);
+    setTotalUpcomingSessions(upcomingCount);
+  };
   useEffect(() => {
-    
-
     fetchSessionTotals();
   }, [session?.user]);
-
 
   const handleCardClick = async (type: ModalType) => {
     if (!session?.user) return;
@@ -211,7 +207,7 @@ const fetchSessionTotals = async () => {
         )
         .eq("user_id", session.user.id)
         .lt("booking_date", today)
-          .order("booking_date", { ascending: false });
+        .order("booking_date", { ascending: false });
 
       if (error) {
         alert(error.message);
@@ -229,7 +225,7 @@ const fetchSessionTotals = async () => {
       const formatted = past.map((item: any) => ({
         id: item.id,
         date: item.booking_date,
-        time: item.start_time.slice(0, 5), 
+        time: item.start_time.slice(0, 5),
         program: item.programs?.name,
         trainer: item.programs?.trainer?.full_name,
       }));
@@ -277,7 +273,6 @@ const fetchSessionTotals = async () => {
         trainer: item.programs?.trainer?.full_name,
       }));
 
-   
       setUpcomingSessions(formatted);
     }
 
@@ -288,8 +283,7 @@ const fetchSessionTotals = async () => {
     /*Submit Booking*/
   }
   const onSubmit = async (data: UserForm) => {
-    
-    const userId = session.user?.id;
+    const userId = session?.user?.id;
     const { data: programData, error: programError } = await supabase
       .from("programs")
       .select("id, trainer_id")
@@ -315,26 +309,26 @@ const fetchSessionTotals = async () => {
       alert("Session Booked");
       reset();
       setIsModalOpen(false);
-       await fetchSessionTotals();
+      await fetchSessionTotals();
     }
   };
   const timeOptions = Array.from({ length: 33 }, (_, i) => {
     // 5:00 AM is start, 30-minute intervals
     const totalMinutes = 5 * 60 + i * 30;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
   });
 
   const fetchRescheduleOptions = async () => {
+    if (!session?.user) return;
+    const now = new Date();
+    const today = new Date().toISOString().split("T")[0];
 
-  if (!session?.user) return;
-  const now = new Date();
-  const today = new Date().toISOString().split("T")[0];
-
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(`
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `
       id,
       booking_date,
       start_time,
@@ -342,122 +336,128 @@ const fetchSessionTotals = async () => {
         name,
         trainer_id
       )
-    `)
-    .eq("user_id", session.user.id)
-    .eq("status", "upcoming")
-    .gte("booking_date", today)
-    .order("booking_date", { ascending: true });
-  
- 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+    `,
+      )
+      .eq("user_id", session.user.id)
+      .eq("status", "upcoming")
+      .gte("booking_date", today)
+      .order("booking_date", { ascending: true });
 
-  const formatted = (data || []).filter((item: any) => {
-      const bookingDateTime = new Date(`${item.booking_date}T${item.start_time}`);
-      return bookingDateTime >= now; // ← only truly upcoming
-    })
-    .map((item: any) => ({
-      id: item.id,
-      date: item.booking_date,
-      time: item.start_time?.slice(0, 5),
-      program: item.programs?.name,
-      trainer: "",
-    }));
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
-  setRescheduleOptions(formatted);
-};
-const onReschedule = async (data: RescheduleForm) => {
-  const { data: programData, error: programError } = await supabase
-    .from("programs")
-    .select("id")
-    .eq("name", data.program)
-    .single();
+    const formatted = (data || [])
+      .filter((item: any) => {
+        const bookingDateTime = new Date(
+          `${item.booking_date}T${item.start_time}`,
+        );
+        return bookingDateTime >= now; // ← only truly upcoming
+      })
+      .map((item: any) => ({
+        id: item.id,
+        date: item.booking_date,
+        time: item.start_time?.slice(0, 5),
+        program: item.programs?.name,
+        trainer: "",
+      }));
 
-  if (programError || !programData) {
-    alert("Program not found");
-    return;
-  }
+    setRescheduleOptions(formatted);
+  };
+  const onReschedule = async (data: RescheduleForm) => {
+    const { data: programData, error: programError } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("name", data.program)
+      .single();
 
-  const { error } = await supabase
-    .from("bookings")
-    .update({
-      program_id: programData.id,
-      booking_date: data.date,
-      start_time: data.time,
-    })
-    .eq("id", data.bookingId);
+    if (programError || !programData) {
+      alert("Program not found");
+      return;
+    }
 
-  if (error) {
-    alert("Failed to reschedule: " + error.message);
-  } else {
-    alert("Session rescheduled!");
-    resetReschedule();
-    setIsRescheduleOpen(false);
-    await fetchSessionTotals();
-  }
-};
+    const { error } = await supabase
+      .from("bookings")
+      .update({
+        program_id: programData.id,
+        booking_date: data.date,
+        start_time: data.time,
+      })
+      .eq("id", data.bookingId);
 
-const fetchCancelOptions = async () => {
-  if (!session?.user) return;
+    if (error) {
+      alert("Failed to reschedule: " + error.message);
+    } else {
+      alert("Session rescheduled!");
+      resetReschedule();
+      setIsRescheduleOpen(false);
+      await fetchSessionTotals();
+    }
+  };
 
-  const now = new Date();
-  const today = new Date().toISOString().split("T")[0];
+  const fetchCancelOptions = async () => {
+    if (!session?.user) return;
 
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(`
+    const now = new Date();
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `
       id,
       booking_date,
       start_time,
       programs!bookings_program_fkey (
         name
       )
-    `)
-    .eq("user_id", session.user.id)
-    .eq("status", "upcoming") 
-    .gte("booking_date", today)
-    .order("booking_date", { ascending: true });
+    `,
+      )
+      .eq("user_id", session.user.id)
+      .eq("status", "upcoming")
+      .gte("booking_date", today)
+      .order("booking_date", { ascending: true });
 
-  if (error) {
-    alert("Error" + error.message);
-    return;
-  }
+    if (error) {
+      alert("Error" + error.message);
+      return;
+    }
 
-  const formatted = (data || [])
-    .filter((item: any) => {
-      const bookingDateTime = new Date(`${item.booking_date}T${item.start_time}`);
-      return bookingDateTime >= now;
-    })
-    .map((item: any) => ({
-      id: item.id,
-      date: item.booking_date,
-      time: item.start_time?.slice(0, 5),
-      program: item.programs?.name,
-      trainer: "",
-    }));
+    const formatted = (data || [])
+      .filter((item: any) => {
+        const bookingDateTime = new Date(
+          `${item.booking_date}T${item.start_time}`,
+        );
+        return bookingDateTime >= now;
+      })
+      .map((item: any) => ({
+        id: item.id,
+        date: item.booking_date,
+        time: item.start_time?.slice(0, 5),
+        program: item.programs?.name,
+        trainer: "",
+      }));
 
-  setCancelOptions(formatted);
-};
+    setCancelOptions(formatted);
+  };
 
-const onCancel = async (data: CancelForm) => {
-  const { error } = await supabase
-    .from("bookings")
-    .update({ status: "cancelled" })
-    .eq("id", data.bookingId)
-    .neq("status", "cancelled");
-    
+  const onCancel = async (data: CancelForm) => {
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "cancelled" })
+      .eq("id", data.bookingId)
+      .neq("status", "cancelled");
 
-  if (error) {
-    alert("Failed to cancel session: " + error.message, "error");
-  } else {
-    alert("Session cancelled successfully");
-    resetCancel();
-    setSelectedModal(null);
-    await fetchSessionTotals();
-  }
-};
+    if (error) {
+      alert("Failed to cancel session: " + error.message);
+    } else {
+      alert("Session cancelled successfully");
+      resetCancel();
+      setSelectedModal(null);
+      await fetchSessionTotals();
+    }
+  };
   return (
     <>
       <section className="  bg-gray-500  flex items-center bg-cover bg-center ">
@@ -482,12 +482,15 @@ const onCancel = async (data: CancelForm) => {
               >
                 Book
               </button>
-               <button   onClick={async () => {
-    await fetchCancelOptions();
-    setSelectedModal("cancel");
-  }} className="bg-green-400 text-black  px-4 py-2 rounded">
-              Cancel
-            </button>
+              <button
+                onClick={async () => {
+                  await fetchCancelOptions();
+                  setSelectedModal("cancel");
+                }}
+                className="bg-green-400 text-black  px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -581,13 +584,15 @@ const onCancel = async (data: CancelForm) => {
           </p>
 
           <div className="flex flex-row space-x-4 mt-4 mx-auto justify-center">
-            <button  onClick={async () => {
-    await fetchRescheduleOptions();
-    setSelectedModal("reschedule");
-  }} className="bg-green-400 text-black  px-4 py-2 rounded">
+            <button
+              onClick={async () => {
+                await fetchRescheduleOptions();
+                setSelectedModal("reschedule");
+              }}
+              className="bg-green-400 text-black  px-4 py-2 rounded"
+            >
               Reschedule
             </button>
-           
           </div>
         </div>
       </section>
@@ -685,7 +690,7 @@ const onCancel = async (data: CancelForm) => {
             </div>
             <div className="cta-buttons flex flex-row items-center justify-center gap-x-4 mt-12">
               <button
-               onClick={() => setSelectedModal("book")}
+                onClick={() => setSelectedModal("book")}
                 className="bg-green-400 text-white px-4 py-2 rounded "
               >
                 Book
@@ -804,8 +809,6 @@ const onCancel = async (data: CancelForm) => {
                 </div>
               </>
             )}
-            
-            
 
             {selectedModal === "book" && (
               <>
@@ -879,95 +882,143 @@ const onCancel = async (data: CancelForm) => {
             )}
 
             {selectedModal === "cancel" && (
-  <>
-    <h2 className="text-red-500 font-bold text-xl">Cancel Session</h2>
-    <form onSubmit={handleCancelSubmit(onCancel)} className="space-y-4">
-      <div>
-        <label>Select Session to Cancel</label>
-        <select
-          {...registerCancel("bookingId")}
-          className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
-        >
-          <option value="">Select a session</option>
-          {cancelOptions.length === 0 ? (
-            <option disabled>No upcoming sessions</option>
-          ) : (
-            cancelOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.program} — {s.date} at {s.time}
-              </option>
-            ))
-          )}
-        </select>
-        {cancelErrors.bookingId && (
-          <p className="text-red-500">{cancelErrors.bookingId.message}</p>
-        )}
-      </div>
+              <>
+                <h2 className="text-red-500 font-bold text-xl">
+                  Cancel Session
+                </h2>
+                <form
+                  onSubmit={handleCancelSubmit(onCancel)}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label>Select Session to Cancel</label>
+                    <select
+                      {...registerCancel("bookingId")}
+                      className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                    >
+                      <option value="">Select a session</option>
+                      {cancelOptions.length === 0 ? (
+                        <option disabled>No upcoming sessions</option>
+                      ) : (
+                        cancelOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.program} — {s.date} at {s.time}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    {cancelErrors.bookingId && (
+                      <p className="text-red-500">
+                        {cancelErrors.bookingId.message}
+                      </p>
+                    )}
+                  </div>
 
-      <p className="text-gray-500 text-sm">
-        This will mark your session as cancelled. This action cannot be undone.
-      </p>
+                  <p className="text-gray-500 text-sm">
+                    This will mark your session as cancelled. This action cannot
+                    be undone.
+                  </p>
 
-      <button
-        type="submit"
-        className="bg-red-500 text-white px-4 py-2 rounded w-full font-semibold">
-        Confirm Cancellation
-      </button>
-    </form>
-  </>
-)}
-             {selectedModal === "reschedule" && (
-        <>
-          <form className="md:col-span-2 h-full" onSubmit={handleRescheduleSubmit(onReschedule)}>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label>Select Session</label>
-                <select {...registerReschedule("bookingId")} className="outline-none border border-gray-300 rounded px-4 py-2 w-full">
-                  <option value="">Select a session</option>
-                  {rescheduleOptions.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.program} — {s.date} at {s.time}
-                    </option>
-                  ))}
-                </select>
-                {rescheduleErrors.bookingId && <p className="text-red-500">{rescheduleErrors.bookingId.message}</p>}
-              </div>
-              <div className="col-span-2">
-                <label>Program</label>
-                <select {...registerReschedule("program")} className="outline-none border border-gray-300 rounded px-4 py-2 w-full">
-                  <option value="">Select a program</option>
-                  <option value="Strength Training">Strength Training</option>
-                  <option value="HIIT">HIIT</option>
-                  <option value="Weightloss">Weightloss</option>
-                </select>
-                {rescheduleErrors.program && <p className="text-red-500">{rescheduleErrors.program.message}</p>}
-              </div>
-              <div>
-                <label>New Date</label>
-                <input type="date" {...registerReschedule("date")} min={new Date().toISOString().split("T")[0]} className="outline-none border border-gray-300 rounded px-4 py-2 w-full" />
-                {rescheduleErrors.date && <p className="text-red-500">{rescheduleErrors.date.message}</p>}
-              </div>
-              <div>
-                <label>New Time</label>
-                <select {...registerReschedule("time")} className="outline-none border border-gray-300 rounded px-4 py-2 w-full">
-                  <option value="">Select a time</option>
-                  {timeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                {rescheduleErrors.time && <p className="text-red-500">{rescheduleErrors.time.message}</p>}
-              </div>
-            </div>
-            <button type="submit" 
-    className="bg-green-400 text-white px-4 py-2 rounded mt-4 w-full">Confirm Reschedule</button>
-          </form>
-        </>
-      )}
-
+                  <button
+                    type="submit"
+                    className="bg-red-500 text-white px-4 py-2 rounded w-full font-semibold"
+                  >
+                    Confirm Cancellation
+                  </button>
+                </form>
+              </>
+            )}
+            {selectedModal === "reschedule" && (
+              <>
+                <form
+                  className="md:col-span-2 h-full"
+                  onSubmit={handleRescheduleSubmit(onReschedule)}
+                >
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label>Select Session</label>
+                      <select
+                        {...registerReschedule("bookingId")}
+                        className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                      >
+                        <option value="">Select a session</option>
+                        {rescheduleOptions.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.program} — {s.date} at {s.time}
+                          </option>
+                        ))}
+                      </select>
+                      {rescheduleErrors.bookingId && (
+                        <p className="text-red-500">
+                          {rescheduleErrors.bookingId.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <label>Program</label>
+                      <select
+                        {...registerReschedule("program")}
+                        className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                      >
+                        <option value="">Select a program</option>
+                        <option value="Strength Training">
+                          Strength Training
+                        </option>
+                        <option value="HIIT">HIIT</option>
+                        <option value="Weightloss">Weightloss</option>
+                      </select>
+                      {rescheduleErrors.program && (
+                        <p className="text-red-500">
+                          {rescheduleErrors.program.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label>New Date</label>
+                      <input
+                        type="date"
+                        {...registerReschedule("date")}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                      />
+                      {rescheduleErrors.date && (
+                        <p className="text-red-500">
+                          {rescheduleErrors.date.message}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label>New Time</label>
+                      <select
+                        {...registerReschedule("time")}
+                        className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                      >
+                        <option value="">Select a time</option>
+                        {timeOptions.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                      {rescheduleErrors.time && (
+                        <p className="text-red-500">
+                          {rescheduleErrors.time.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-green-400 text-white px-4 py-2 rounded mt-4 w-full"
+                  >
+                    Confirm Reschedule
+                  </button>
+                </form>
+              </>
+            )}
           </div>
-            
         </div>
-          
       )}
-          
     </>
   );
 };

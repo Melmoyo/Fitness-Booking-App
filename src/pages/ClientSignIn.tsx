@@ -44,84 +44,66 @@ type SignUpForm = z.infer<typeof SignUpSchema>;
 
 const ClientSignIn = () => {
   const [isSignIn, setIsSignIn] = useState(true);
-  const { session, role } = UserAuth();
+
   const navigate = useNavigate();
   const [rememberMe, setRememberMe] = useState(() => {
-
-  return !!localStorage.getItem("rememberedEmail");
-});
-const [isForgotPassword, setIsForgotPassword] = useState(false);
-const [forgotEmail, setForgotEmail] = useState("");
-const [resetSent, setResetSent] = useState(false);
+    return !!localStorage.getItem("rememberedEmail");
+  });
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
   const form = useForm<AuthForm>({
     resolver: zodResolver(isSignIn ? SignInSchema : SignUpSchema),
   });
   const {
     register,
     handleSubmit,
-    reset,setValue,
+    reset,
+    setValue,
     formState: { errors },
   } = form;
-const handleForgotPassword = async () => {
-  if (!forgotEmail) {
-    showAlert("Please enter your email", "error");
-    return;
-  }
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      alert("Please enter your email");
+      return;
+    }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
 
-  if (error) {
-    showAlert("Failed to send reset email: " + error.message, "error");
-    return;
-  }
+    if (error) {
+      alert("Failed to send reset email ");
+      return;
+    }
 
-  setResetSent(true);
-};
+    setResetSent(true);
+  };
   const handleSignIn = async (data: SignInForm) => {
-    
-
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
+    const { data: error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
-    
+
     if (error) {
-      alert("Failed to sign in" + error.message);
+      alert("Failed to sign in" + error);
       return;
     }
     if (data.rememberMe) {
-    localStorage.setItem("rememberedEmail", data.email);
-  } else {
-    localStorage.removeItem("rememberedEmail");
-  }
+      localStorage.setItem("rememberedEmail", data.email);
+    } else {
+      localStorage.removeItem("rememberedEmail");
+    }
     reset();
     navigate("/client_dashboard");
-
-    // const { data: userData, error: profileError } = await supabase
-    //   .from("users")
-    //   .select("full_name, role")
-    //   .eq("id", authData.user.id)
-    //   .single();
-    // console.log("Users table lookup:", { userData, profileError });
-    // if (profileError || !userData) {
-    //   alert("Login failed");
-    //   return;
-    // }
-    // if (userData?.role === "client") {
-    //   reset();
-
-    //   navigate("/client_dashboard");
-    // }
   };
-useEffect(() => {
-  const savedEmail = localStorage.getItem("rememberedEmail");
-  if (savedEmail) {
-    setValue("email", savedEmail); 
-    setValue("rememberMe", true);
-  }
-}, []);
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setValue("email", savedEmail);
+      setValue("rememberMe", true);
+    }
+  }, []);
   const handleSignUp = async (data: SignUpForm) => {
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
@@ -261,21 +243,25 @@ useEffect(() => {
                     type="checkbox"
                     {...register("rememberMe")}
                     checked={rememberMe}
-  onChange={(e) => {
-    setRememberMe(e.target.checked);
-    setValue("rememberMe", e.target.checked);
-    if (!e.target.checked) {
-      localStorage.removeItem("rememberedEmail"); 
-    }
-  }}
+                    onChange={(e) => {
+                      setRememberMe(e.target.checked);
+                      setValue("rememberMe", e.target.checked);
+                      if (!e.target.checked) {
+                        localStorage.removeItem("rememberedEmail");
+                      }
+                    }}
                     className="form-checkbox h-4 w-4 text-green-500"
                   />
                   <span className="text-sm">Remember me</span>
                 </label>
-                <a href="#" onClick={(e) => {
-    e.preventDefault();
-    setIsForgotPassword(true);
-  }} className="text-sm text-green-500 hover:underline">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsForgotPassword(true);
+                  }}
+                  className="text-sm text-green-500 hover:underline"
+                >
                   Forgot password?
                 </a>
               </div>
@@ -318,69 +304,69 @@ useEffect(() => {
         </div>
       </div>
       {isForgotPassword && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-    <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl space-y-4">
-      
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Reset Password</h2>
-        <button
-          onClick={() => {
-            setIsForgotPassword(false);
-            setResetSent(false);
-            setForgotEmail("");
-          }}
-          className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-        >
-          ✕
-        </button>
-      </div>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">Reset Password</h2>
+              <button
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setResetSent(false);
+                  setForgotEmail("");
+                }}
+                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-      {resetSent ? (
-        // Success state
-        <div className="space-y-4 text-center">
-          <p className="text-green-500 font-semibold">Reset link sent!</p>
-          <p className="text-gray-600 text-sm">
-            Check your email at <strong>{forgotEmail}</strong> for a password reset link.
-          </p>
-          <button
-            onClick={() => {
-              setIsForgotPassword(false);
-              setResetSent(false);
-              setForgotEmail("");
-            }}
-            className="w-full bg-green-500 text-white py-2 rounded-md font-medium"
-          >
-            Back to Sign In
-          </button>
-        </div>
-      ) : (
-        // Email input state
-        <div className="space-y-4">
-          <p className="text-gray-600 text-sm">
-            Enter your email and we'll send you a link to reset your password.
-          </p>
-          <div>
-            <label className="block mb-1 font-medium">Email</label>
-            <input
-              type="email"
-              value={forgotEmail}
-              onChange={(e) => setForgotEmail(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
-            />
+            {resetSent ? (
+              // Success state
+              <div className="space-y-4 text-center">
+                <p className="text-green-500 font-semibold">Reset link sent!</p>
+                <p className="text-gray-600 text-sm">
+                  Check your email at <strong>{forgotEmail}</strong> for a
+                  password reset link.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsForgotPassword(false);
+                    setResetSent(false);
+                    setForgotEmail("");
+                  }}
+                  className="w-full bg-green-500 text-white py-2 rounded-md font-medium"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            ) : (
+              // Email input state
+              <div className="space-y-4">
+                <p className="text-gray-600 text-sm">
+                  Enter your email and we'll send you a link to reset your
+                  password.
+                </p>
+                <div>
+                  <label className="block mb-1 font-medium">Email</label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleForgotPassword}
+                  className="w-full bg-green-500 text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
+                >
+                  Send Reset Link
+                </button>
+              </div>
+            )}
           </div>
-          <button
-            onClick={handleForgotPassword}
-            className="w-full bg-green-500 text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
-          >
-            Send Reset Link
-          </button>
         </div>
       )}
-
-    </div>
-  </div>
-)}
     </>
   );
 };

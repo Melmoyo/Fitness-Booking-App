@@ -5,7 +5,7 @@ import {
   faPiggyBank,
   faUserPlus,
   faInbox,
-    faRectangleXmark,
+  faRectangleXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { UserAuth } from "../Context/AuthContext";
@@ -14,56 +14,52 @@ import { supabase } from "../SupabaseClient";
 
 const AdminDashboard = () => {
   // const navigate = useNavigate();
-  const { session, role, fullName } = UserAuth();
-   type ModalType = "upcoming" | "past"  | null;
-    interface Sessions {
+  const { session } = UserAuth();
+  type ModalType = "upcoming" | "past" | null;
+  interface Sessions {
     id: string;
     date: string;
     time: string;
     client: string;
-   
   }
-   const [user, setUser] = useState<any>(null);
-  const today = new Date().toISOString().split("T")[0];
+
   const [selectedModal, setSelectedModal] = useState<ModalType>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pastSessions, setPastSessions] = useState<Sessions[]>([]);
+  const [_isModalOpen, _setIsModalOpen] = useState(false);
+  const [_pastSessions, _setPastSessions] = useState<Sessions[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Sessions[]>([]);
-   
+
   const [totalClients, setTotalClients] = useState(0);
   const [totalUpcomingSessions, setTotalUpcomingSessions] = useState(0);
-const [revenueEarned,setRevenueEarned]= useState(1000);
-const [loading, setLoading] = useState(false);
+  const [revenueEarned, _setRevenueEarned] = useState(1000);
+  const [_loading, setLoading] = useState(false);
 
+  const fetchTrainerData = async () => {
+    if (!session?.user) return;
 
-const fetchTrainerData = async () => {
-  if (!session?.user) return;
+    // Get trainer's programs
+    const { data: programs, error: programError } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("trainer_id", session.user.id);
 
-  // Get trainer's programs
-  const { data: programs, error: programError } = await supabase
-    .from("programs")
-    .select("id")
-    .eq("trainer_id", session.user.id);
+    if (programError || !programs) return;
 
-  if (programError || !programs) return;
+    const programIds = programs.map((p: any) => p.id);
 
-  const programIds = programs.map((p: any) => p.id);
+    if (programIds.length === 0) {
+      setTotalClients(0);
+      setUpcomingSessions([]);
+      setLoading(false);
+      return;
+    }
 
-  if (programIds.length === 0) {
+    const now = new Date();
 
-    setTotalClients(0);
-    setUpcomingSessions([]);
-    setLoading(false);
-    return;
-  }
-
-  const now = new Date();
-  const today = new Date().toISOString().split("T")[0];
-
-  // Get all bookings for trainer's programs
-  const { data: bookings, error: bookingError } = await supabase
-    .from("bookings")
-    .select(`
+    // Get all bookings for trainer's programs
+    const { data: bookings, error: bookingError } = await supabase
+      .from("bookings")
+      .select(
+        `
       id,
       booking_date,
       start_time,
@@ -75,60 +71,65 @@ const fetchTrainerData = async () => {
       programs!bookings_program_fkey (
         name
       )
-    `)
-    .in("program_id", programIds)
-    
-    .order("booking_date", { ascending: true });
-  
+    `,
+      )
+      .in("program_id", programIds)
 
-  if (bookingError) {
-   
+      .order("booking_date", { ascending: true });
+
+    if (bookingError) {
+      setLoading(false);
+      return;
+    }
+
+    // Total unique clients trained (past sessions)
+    const pastBookings = (bookings || []).filter((b: any) => {
+      const dt = new Date(`${b.booking_date}T${b.start_time}`);
+      return dt < now;
+    });
+    const uniqueClientEmails = new Set(pastBookings.map((b: any) => b.email));
+    setTotalClients(uniqueClientEmails.size);
+
+    // Upcoming bookings
+    const upcoming = (bookings || [])
+      .filter((b: any) => {
+        const dt = new Date(`${b.booking_date}T${b.start_time}`);
+        return dt >= now;
+      })
+      .map((b: any) => ({
+        ...b,
+        date: b.booking_date,
+        time: b.start_time,
+        client: `${b.first_name} ${b.last_name}`,
+      }));
+
+    setUpcomingSessions(upcoming);
+    setTotalUpcomingSessions(upcoming.length);
     setLoading(false);
-    return;
-  }
+  };
 
-  // Total unique clients trained (past sessions)
-  const pastBookings = (bookings || []).filter((b: any) => {
-    const dt = new Date(`${b.booking_date}T${b.start_time}`);
-    return dt < now;
-  });
-  const uniqueClientEmails = new Set(pastBookings.map((b: any) => b.email));
-  setTotalClients(uniqueClientEmails.size);
+  useEffect(() => {
+    fetchTrainerData();
+  }, [session?.user]);
 
-  // Upcoming bookings
-  const upcoming = (bookings || []).filter((b: any) => {
-    const dt = new Date(`${b.booking_date}T${b.start_time}`);
-    return dt >= now;
-  });
-  setUpcomingSessions(upcoming);
-  setTotalUpcomingSessions(upcoming.length);
-  setLoading(false);
-};
+  const handleCardClick = async (type: ModalType) => {
+    if (!session?.user) return;
+    setSelectedModal(type);
 
-useEffect(() => {
-  fetchTrainerData();
-}, [session?.user]);
+    const { data: programs } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("trainer_id", session.user.id);
 
-const handleCardClick = async (type: ModalType) => {
-  if (!session?.user) return;
-  setSelectedModal(type);
- 
+    const programIds = (programs || []).map((p: any) => p.id);
 
-  const { data: programs } = await supabase
-    .from("programs")
-    .select("id")
-    .eq("trainer_id", session.user.id);
+    const now = new Date();
 
-  const programIds = (programs || []).map((p: any) => p.id);
-
-
-
-  const now = new Date();
-
-  if (type === "upcoming") {
-    const { data, error } = await supabase
-      .from("bookings")
-      .select(`
+    if (type === "upcoming") {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(
+          `
         id,
         booking_date,
         start_time,
@@ -139,35 +140,36 @@ const handleCardClick = async (type: ModalType) => {
         programs!bookings_program_fkey (
           name
         )
-      `)
-      .in("program_id", programIds)
-      .neq("status", "cancelled")
-      .order("booking_date", { ascending: true });
+      `,
+        )
+        .in("program_id", programIds)
+        .neq("status", "cancelled")
+        .order("booking_date", { ascending: true });
 
-    if (error) {
-      alert("Error" + error.message);
-    
-      return;
+      if (error) {
+        alert("Error" + error.message);
+
+        return;
+      }
+
+      const upcoming = (data || [])
+        .filter((b: any) => {
+          const dt = new Date(`${b.booking_date}T${b.start_time}`);
+          return dt >= now;
+        })
+        .map((b: any) => ({
+          id: b.id,
+          date: b.booking_date,
+          time: b.start_time?.slice(0, 5),
+          client: `${b.first_name} ${b.last_name}`,
+          email: b.email,
+          phone: b.phone,
+          program: b.programs?.name,
+        }));
+
+      setUpcomingSessions(upcoming);
     }
-
-    const upcoming = (data || []).filter((b: any) => {
-      const dt = new Date(`${b.booking_date}T${b.start_time}`);
-      return dt >= now;
-    }).map((b: any) => ({
-      id: b.id,
-      date: b.booking_date,
-      time: b.start_time?.slice(0, 5),
-      client: `${b.first_name} ${b.last_name}`,
-      email: b.email,
-      phone: b.phone,
-      program: b.programs?.name,
-    }));
-
-    setUpcomingSessions(upcoming);
-  }
-
- 
-};
+  };
 
   return (
     <>
@@ -214,26 +216,26 @@ const handleCardClick = async (type: ModalType) => {
               <h3>Total clients trained</h3>
               <p>See your complete roster</p>
               <div>
-               <span className=" text-2xl font-bold text-green-500 md:text-3xl">
-                {totalClients}
-              </span>
-               
+                <span className=" text-2xl font-bold text-green-500 md:text-3xl">
+                  {totalClients}
+                </span>
               </div>
             </div>
 
-            <div  onClick={async () => (
+            <div
+              onClick={async () => (
                 setSelectedModal("upcoming"),
                 await handleCardClick("upcoming")
-              )} className="border-2 border-gray-200 h-[16rem] px-4 rounded-md flex flex-col justify-start py-8 space-y-4 text-left">
+              )}
+              className="border-2 border-gray-200 h-[16rem] px-4 rounded-md flex flex-col justify-start py-8 space-y-4 text-left"
+            >
               <FontAwesomeIcon icon={faInbox} size="xl" className="mt-3" />
               <h3>Upcoming bookings this week</h3>
               <p>Stay on top of your schedule</p>
               <div>
-               
                 <span className=" text-2xl font-bold text-green-500 md:text-3xl">
-                {totalUpcomingSessions}
-              </span>
-                
+                  {totalUpcomingSessions}
+                </span>
               </div>
             </div>
 
@@ -242,11 +244,9 @@ const handleCardClick = async (type: ModalType) => {
               <h3>Revenue earned this month</h3>
               <p>Track your earnings growth</p>
               <div>
-               
                 <span className=" text-2xl font-bold text-green-500 md:text-3xl">
-                R{revenueEarned}
-              </span>
-               
+                  R{revenueEarned}
+                </span>
               </div>
             </div>
             <div className="border-2 border-gray-200 h-[16rem] px-4 rounded-md flex flex-col justify-start py-8 space-y-4 text-left">
@@ -303,7 +303,7 @@ const handleCardClick = async (type: ModalType) => {
         </div>
       </section>
 
-{/*Reusable Modal*/}
+      {/*Reusable Modal*/}
       {selectedModal && (
         <div className=" fixed inset-0 flex items-center justify-center ">
           <div className="space-y-4 bg-white w-full max-w-md h-[400px] rounded-2xl p-6 shadow-xl relative md:col-span-2">
@@ -315,7 +315,7 @@ const handleCardClick = async (type: ModalType) => {
                 <FontAwesomeIcon icon={faRectangleXmark} size="lg" />
               </button>
             </div>
-             
+
             {selectedModal === "upcoming" && (
               <>
                 <h2>Upcoming Bookings</h2>
@@ -325,7 +325,6 @@ const handleCardClick = async (type: ModalType) => {
                       <th>Date</th>
                       <th>Time</th>
                       <th>Client</th>
-                     
                     </tr>
                   </thead>
                   <tbody className="text-center divide-y divide-x">
@@ -334,25 +333,17 @@ const handleCardClick = async (type: ModalType) => {
                         <td>{s.date}</td>
                         <td>{s.time}</td>
                         <td>{s.client}</td>
-                  
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                 </>
-            
+              </>
             )}
-            </div>
-          </div>   
- 
-  )}
-   
-    </> 
-    ); 
-}; 
-
-
-
-
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 export default AdminDashboard;

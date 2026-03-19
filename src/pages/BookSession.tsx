@@ -70,7 +70,7 @@ const BookSession = () => {
       .neq("status", "cancelled");
 
     if (error) {
-      alert("Error fetching booked times:", error.message);
+      alert("Error fetching booked times:" + error.message);
       return;
     }
 
