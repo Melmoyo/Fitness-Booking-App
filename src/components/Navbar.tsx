@@ -14,6 +14,7 @@ const Navbar = () => {
   {
     /* State for mobile menu and admin dropdown */
   }
+
   const [isOpen, setIsOpen] = useState(false);
   const handleClick = () => {
     setIsOpen(!isOpen);

@@ -1,41 +1,61 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+//import { useState, useEffect } from "react";
 import { supabase } from "../SupabaseClient";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+
+const AdminSchema = z.object({
+  email: z.string().nonempty("Email is required").email("Invalid email format"),
+  password: z.string().nonempty("Password is required"),
+});
+type LoginForm = z.infer<typeof AdminSchema>;
+
 const AdminLogin = () => {
+  const form = useForm<LoginForm>({
+    resolver: zodResolver(AdminSchema),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form;
+
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-  const handleLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
+  const onSubmit = async (data: LoginForm) => {
+    
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
     });
-
+    
     if (error) {
-      console.log("Login failed");
+      alert("Login failed" + error.message);
       return;
     }
+
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("role")
-      .eq("id", data?.user?.id)
+      .select("full_name, role")
+      .eq("id", authData.user.id)
       .single();
-    if (userData?.role !== "trainer" || userError) {
-      alert("Access Denied. Not an trainer");
-    } else {
-      setFormData({
-        email: "",
-        password: "",
-      });
+   
+    if (userError || !userData) {
+      alert("No user record found ");
+      return;
+    }
+
+    if (userData?.role === "trainer") {
+ 
+      reset();
+
       navigate("/dashboard");
+    } else {
+    
+      alert("Access Denied.Not a trainer");
     }
   };
   return (
@@ -56,7 +76,7 @@ const AdminLogin = () => {
         <div className=" flex flex-row  text-left space-y-8  md:text-left px-10 w-full  ">
           <div className="  space-y-4  w-full">
             <div className="grid grid-cols-1 gap-8  space-x-8 md:grid-cols-2   ">
-              <form onSubmit={handleLogin} className="py-8 px-10 ">
+              <form onSubmit={handleSubmit(onSubmit)} className="py-8 px-10 ">
                 <h2 className="font-semibold text-2xl font-outfit md:text-1xl font-bold">
                   Secure
                 </h2>
@@ -71,21 +91,31 @@ const AdminLogin = () => {
                     <label htmlFor="email">Email</label>
                     <input
                       type="email"
+                      // name="email"
                       id="email"
-                      value={formData.email}
-                      onChange={handleChange}
+                      // value={formData.email}
+                      // onChange={handleChange}
+                      {...register("email")}
                       className="outline-black border border-gray-300 rounded-lg px-4 py-2 w-full mt-2 "
                     />
+                    {errors.email && (
+                      <p className="text-red-500">{errors.email.message}</p>
+                    )}
                   </div>
                   <div>
                     <label htmlFor="password">Password</label>
                     <input
                       type="password"
+                      // name="password"
                       id="password"
-                      value={formData.password}
-                      onChange={handleChange}
+                      // value={formData.password}
+                      // onChange={handleChange}
+                      {...register("password")}
                       className="outline-black border border-gray-300 rounded-lg px-4 py-2 w-full mt-2 "
                     />
+                    {errors.password && (
+                      <p className="text-red-500">{errors.password.message}</p>
+                    )}
                   </div>
                   <div className="">
                     <button
@@ -110,4 +140,5 @@ const AdminLogin = () => {
     </>
   );
 };
+
 export default AdminLogin;

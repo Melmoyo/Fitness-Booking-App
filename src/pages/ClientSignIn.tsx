@@ -1,115 +1,164 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../SupabaseClient";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { UserAuth } from "../Context/AuthContext";
+
+const SignInSchema = z.object({
+  email: z.string().nonempty("Email is required").email("Invalid email format"),
+  password: z.string().nonempty("Password is required"),
+  rememberMe: z.boolean().optional(),
+});
+const SignUpSchema = z
+  .object({
+    name: z
+      .string()
+      .nonempty("Name is required")
+      .min(3, "First name should be more than 3 characters")
+      .refine((val) => /^[A-Za-z]+$/.test(val), {
+        message: "Only letters allowed",
+      }),
+    email: z
+      .string()
+      .nonempty("Email is required")
+      .email("Invalid email format"),
+
+    password: z.string().nonempty("Password is required"),
+    confirmPassword: z.string().nonempty("Confirm Password is required"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+type AuthForm = {
+  email: string;
+  password: string;
+  name?: string;
+  confirmPassword?: string;
+  rememberMe?: boolean;
+};
+type SignInForm = z.infer<typeof SignInSchema>;
+type SignUpForm = z.infer<typeof SignUpSchema>;
 
 const ClientSignIn = () => {
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isSignIn, setIsSignIn] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    rememberMe: false,
-  });
+  const [isSignIn, setIsSignIn] = useState(true);
+  const { session, role } = UserAuth();
   const navigate = useNavigate();
+  const [rememberMe, setRememberMe] = useState(() => {
 
-  const handleSignIn = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password,
+  return !!localStorage.getItem("rememberedEmail");
+});
+const [isForgotPassword, setIsForgotPassword] = useState(false);
+const [forgotEmail, setForgotEmail] = useState("");
+const [resetSent, setResetSent] = useState(false);
+  const form = useForm<AuthForm>({
+    resolver: zodResolver(isSignIn ? SignInSchema : SignUpSchema),
+  });
+  const {
+    register,
+    handleSubmit,
+    reset,setValue,
+    formState: { errors },
+  } = form;
+const handleForgotPassword = async () => {
+  if (!forgotEmail) {
+    showAlert("Please enter your email", "error");
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) {
+    showAlert("Failed to send reset email: " + error.message, "error");
+    return;
+  }
+
+  setResetSent(true);
+};
+  const handleSignIn = async (data: SignInForm) => {
+    
+
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
     });
+    
     if (error) {
       alert("Failed to sign in" + error.message);
       return;
     }
-    const { data: userData, error: profileError } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", data?.user?.id)
-      .single();
-    if (profileError) {
-      alert("Login failed");
-    } else {
-      if (userData?.role === "client") {
-        navigate("/client_dashboard");
-      } else {
-        navigate("/dashboard");
-      }
-    }
+    if (data.rememberMe) {
+    localStorage.setItem("rememberedEmail", data.email);
+  } else {
+    localStorage.removeItem("rememberedEmail");
+  }
+    reset();
+    navigate("/client_dashboard");
+
+    // const { data: userData, error: profileError } = await supabase
+    //   .from("users")
+    //   .select("full_name, role")
+    //   .eq("id", authData.user.id)
+    //   .single();
+    // console.log("Users table lookup:", { userData, profileError });
+    // if (profileError || !userData) {
+    //   alert("Login failed");
+    //   return;
+    // }
+    // if (userData?.role === "client") {
+    //   reset();
+
+    //   navigate("/client_dashboard");
+    // }
   };
-
-  const handleSignUp = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
+useEffect(() => {
+  const savedEmail = localStorage.getItem("rememberedEmail");
+  if (savedEmail) {
+    setValue("email", savedEmail); 
+    setValue("rememberMe", true);
+  }
+}, []);
+  const handleSignUp = async (data: SignUpForm) => {
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
     });
 
     if (error) {
       console.log("Sign Up failed: " + error.message);
       return;
-    } else {
-      alert("Sign Up successful");
-      await supabase.from("users").insert([
-        {
-          id: data?.user?.id,
-          full_name: formData.name,
-          role: "client",
-        },
-      ]);
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        rememberMe: false,
-      });
     }
-    setIsSignIn(true);
+    if (!authData.user) return;
+    await supabase.auth.updateUser({
+      data: { role: "client" },
+    });
+
+    await supabase.from("users").insert([
+      {
+        id: authData.user.id,
+        full_name: data.name,
+        role: "client",
+      },
+    ]);
+
+    alert("Sign Up successful");
+    reset();
+
+    setIsSignIn(false);
   };
 
-  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const onSubmit = async (data: SignInForm | SignUpForm) => {
     if (!isSignIn) {
-      await handleSignUp(e);
-      console.log("Signing up with:", formData);
+      await handleSignUp(data as SignUpForm);
+      console.log("Signing up with:", data);
     } else {
-      await handleSignIn(e);
-      console.log("Signing in with:", formData);
+      await handleSignIn(data as SignInForm);
+      console.log("Signing in with:", data);
     }
-  };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const validate = () => {
-    const newErrors: { [key: string]: string } = {};
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.password) newErrors.password = "Password is required";
-
-    if (!isSignIn) {
-      if (!formData.name) newErrors.name = "Name is required";
-      if (!formData.confirmPassword)
-        newErrors.confirmPassword = "Confirm Password is required";
-      if (
-        formData.password &&
-        formData.confirmPassword &&
-        formData.password !== formData.confirmPassword
-      )
-        newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   return (
@@ -138,21 +187,19 @@ const ClientSignIn = () => {
             {isSignIn ? "Client Sign In" : "Client Sign Up"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!isSignIn && (
               <div>
                 <label className="block mb-1 font-medium">Name</label>
                 <input
                   type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
+                  {...register("name")}
                   className={`w-full px-4 py-2 border rounded-md focus:outline-none ${
                     errors.name ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 {errors.name && (
-                  <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                  <p className="text-red-500 ">{errors.name.message}</p>
                 )}
               </div>
             )}
@@ -161,15 +208,13 @@ const ClientSignIn = () => {
               <label className="block mb-1 font-medium">Email</label>
               <input
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+                {...register("email")}
                 className={`w-full px-4 py-2 border rounded-md focus:outline-none ${
                   errors.email ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                <p className="text-red-500 ">{errors.email.message}</p>
               )}
             </div>
 
@@ -177,15 +222,13 @@ const ClientSignIn = () => {
               <label className="block mb-1 font-medium">Password</label>
               <input
                 type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
+                {...register("password")}
                 className={`w-full px-4 py-2 border rounded-md focus:outline-none ${
                   errors.password ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                <p className="text-red-500 ">{errors.password.message}</p>
               )}
             </div>
 
@@ -196,9 +239,7 @@ const ClientSignIn = () => {
                 </label>
                 <input
                   type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
+                  {...register("confirmPassword")}
                   className={`w-full px-4 py-2 border rounded-md focus:outline-none ${
                     errors.confirmPassword
                       ? "border-red-500"
@@ -206,8 +247,8 @@ const ClientSignIn = () => {
                   }`}
                 />
                 {errors.confirmPassword && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.confirmPassword}
+                  <p className="text-red-500  ">
+                    {errors.confirmPassword.message}
                   </p>
                 )}
               </div>
@@ -218,14 +259,23 @@ const ClientSignIn = () => {
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onChange={handleChange}
+                    {...register("rememberMe")}
+                    checked={rememberMe}
+  onChange={(e) => {
+    setRememberMe(e.target.checked);
+    setValue("rememberMe", e.target.checked);
+    if (!e.target.checked) {
+      localStorage.removeItem("rememberedEmail"); 
+    }
+  }}
                     className="form-checkbox h-4 w-4 text-green-500"
                   />
                   <span className="text-sm">Remember me</span>
                 </label>
-                <a href="#" className="text-sm text-green-500 hover:underline">
+                <a href="#" onClick={(e) => {
+    e.preventDefault();
+    setIsForgotPassword(true);
+  }} className="text-sm text-green-500 hover:underline">
                   Forgot password?
                 </a>
               </div>
@@ -267,6 +317,70 @@ const ClientSignIn = () => {
           </p>
         </div>
       </div>
+      {isForgotPassword && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+    <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-xl space-y-4">
+      
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Reset Password</h2>
+        <button
+          onClick={() => {
+            setIsForgotPassword(false);
+            setResetSent(false);
+            setForgotEmail("");
+          }}
+          className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+        >
+          ✕
+        </button>
+      </div>
+
+      {resetSent ? (
+        // Success state
+        <div className="space-y-4 text-center">
+          <p className="text-green-500 font-semibold">Reset link sent!</p>
+          <p className="text-gray-600 text-sm">
+            Check your email at <strong>{forgotEmail}</strong> for a password reset link.
+          </p>
+          <button
+            onClick={() => {
+              setIsForgotPassword(false);
+              setResetSent(false);
+              setForgotEmail("");
+            }}
+            className="w-full bg-green-500 text-white py-2 rounded-md font-medium"
+          >
+            Back to Sign In
+          </button>
+        </div>
+      ) : (
+        // Email input state
+        <div className="space-y-4">
+          <p className="text-gray-600 text-sm">
+            Enter your email and we'll send you a link to reset your password.
+          </p>
+          <div>
+            <label className="block mb-1 font-medium">Email</label>
+            <input
+              type="email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              placeholder="Enter your email"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none"
+            />
+          </div>
+          <button
+            onClick={handleForgotPassword}
+            className="w-full bg-green-500 text-white py-2 rounded-md font-medium hover:bg-green-600 transition"
+          >
+            Send Reset Link
+          </button>
+        </div>
+      )}
+
+    </div>
+  </div>
+)}
     </>
   );
 };

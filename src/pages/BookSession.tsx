@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faAngleRight,
@@ -5,21 +6,140 @@ import {
   faPhone,
   faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
-import { useState } from "react";
-const BookSession = () => {
-  const [formData, setFormData]= useState({
-    first_name:"",
-    last_name:"",
-    email:"",
-    phone:"",
-    program:"",
-    experience:"",
-    agree:false
+import { isValidPhoneNumber } from "libphonenumber-js";
+import { supabase } from "../SupabaseClient";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
+const userFormSchema = z.object({
+  firstName: z
+    .string()
+    .nonempty("First name is required")
+    .min(3, "First name should be more than 3 characters")
+    .refine((val) => /^[A-Za-z]+$/.test(val), {
+      message: "Only letters allowed",
+    }),
+  lastName: z
+    .string()
+    .nonempty("First name is required")
+    .min(3, "Last name should be more than 3 characters")
+    .regex(/^[A-Za-z]+$/, "Only letters allowed"),
+  email: z.string().nonempty("Emai is required").email("Invalid email format"),
+
+  phone: z
+    .string()
+    .nonempty("Phone number is required")
+    .refine((val) => isValidPhoneNumber(val), {
+      message: "Invalid phone number",
+    }),
+  program: z.string().nonempty("Please select a program"),
+  date: z.string().min(1, "Date is required"),
+  time: z.string().min(1, "Time is required"),
+  level: z.string("Please select a level"),
+  agree: z.boolean().refine((val) => val === true, {
+    message: "You must accept terms",
+  }),
+  goals: z.string().optional(),
+});
+type UserForm = z.infer<typeof userFormSchema>;
+
+const BookSession = () => {
+  // const form = useForm<UserForm>({
+  //   resolver: zodResolver(userFormSchema),
+  // });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<UserForm>({
+    resolver: zodResolver(userFormSchema),
   });
-  const handleChange=(e)=>{
-    setFormData(e.target.value)
-  }
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
+
+  const fetchBookedTimes = async (date: string) => {
+    if (!date) return;
+
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("start_time")
+      .eq("booking_date", date)
+      .neq("status", "cancelled");
+
+    if (error) {
+      alert("Error fetching booked times:", error.message);
+      return;
+    }
+
+    const times = (data || []).map((b: any) => b.start_time?.slice(0, 5));
+
+    setBookedTimes(times);
+  };
+  const selectedDate = watch("date");
+
+  useEffect(() => {
+    if (selectedDate) {
+      fetchBookedTimes(selectedDate);
+    }
+  }, [selectedDate]);
+  const timeOptions = Array.from({ length: 33 }, (_, i) => {
+    // 5:00 AM is start, 30-minute intervals
+    const totalMinutes = 5 * 60 + i * 30;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  });
+
+  const onSubmit = async (data: UserForm) => {
+    // Step 1: Find the program by name
+    try {
+      const { data: programData, error: programError } = await supabase
+        .from("programs")
+        .select("id, trainer_id")
+        .eq("name", data.program.trim())
+        .single();
+
+      if (programError || !programData) {
+        alert("Program not found");
+        return;
+      }
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", data.email)
+        .maybeSingle();
+
+      const userId = existingUser?.id ?? null;
+
+      const programId = programData.id;
+      // Step 2: Insert booking using program id
+      const { error: bookingError } = await supabase.from("bookings").insert([
+        {
+          user_id: userId,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          program_id: programId,
+          booking_date: data.date,
+          start_time: data.time,
+          experience: data.level,
+          goals: data.goals,
+        },
+      ]);
+      if (bookingError) {
+        alert("Failed to book" + bookingError.message);
+      } else {
+        alert("Session has been booked");
+        reset();
+      }
+    } catch (err) {
+      alert("Somehing went wrong");
+    }
+  };
   return (
     <>
       <section className="hero  flex bg-gray-200 justify-evenly items-start ">
@@ -124,61 +244,111 @@ const BookSession = () => {
             <div></div>
           </div>
 
-          <form className="md:col-span-2">
+          <form className="md:col-span-2" onSubmit={handleSubmit(onSubmit)}>
             <div className="grid grid-cols-2 md:grid-cols-2 gap-4 ">
               <div>
                 <label htmlFor="first">First name</label>
                 <input
                   type="text"
-                  id="first"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
+                  id="first_name"
+                  {...register("firstName")}
                   className="outline-black border border-gray-300 rounded px-4 py-2 w-full"
                 />
+                {errors.firstName && (
+                  <p className="text-red-500">{errors.firstName.message}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="last_name">Last name</label>
                 <input
                   type="text"
                   id="last_name"
-                  name="last_name"
+                  {...register("lastName")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
                 />
+                {errors.lastName && (
+                  <p className="text-red-500">{errors.lastName.message}</p>
+                )}
               </div>
               <div className="col-span-2">
                 <label htmlFor="email">Email</label>
                 <input
                   type="email"
                   id="email"
-                  name="email"
+                  {...register("email")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
                 />
+                {errors.email && (
+                  <p className="text-red-500">{errors.email.message}</p>
+                )}
               </div>
               <div className="col-span-2">
                 <label htmlFor="phone">Phone number</label>
                 <input
                   type="tel"
                   id="phone"
-                  name="phone"
+                  placeholder="+27 71 234 5678"
+                  {...register("phone")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
                 />
+                {errors.phone && (
+                  <p className="text-red-500">{errors.phone.message}</p>
+                )}
               </div>
               <div className="col-span-2">
-                <label htmlFor="program">Which program interestst you?</label>
+                <label htmlFor="program">Which program interests you?</label>
                 <select
                   id="program"
-                  name="program"
+                  {...register("program")}
                   className="  outline-none border border-gray-300 rounded px-4 py-2 w-full"
                 >
                   <option value="">Select a program</option>
-                  <option value="strength">Strength Training</option>
-                  <option value="hiit">HIIT</option>
-                  <option value="weight_loss">Weight Loss</option>
+                  <option value="Strength Training">Strength Training</option>
+                  <option value="HIIT">HIIT</option>
+                  <option value="Weightloss">Weightloss</option>
                 </select>
+                {errors.program && (
+                  <p className="text-red-500">{errors.program.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="appointment_date">Select Date</label>
+                <input
+                  type="date"
+                  id="appointment_date"
+                  {...register("date")}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                />
+                {errors.date && (
+                  <p className="text-red-500">{errors.date.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="appointment_time">Time </label>
+                <select
+                  {...register("time")}
+                  className="  outline-none border border-gray-300 rounded px-4 py-2 w-full"
+                >
+                  <option value="">Select a time</option>
+                  {timeOptions.map((t) => (
+                    <option
+                      key={t}
+                      value={t}
+                      disabled={bookedTimes.includes(t)}
+                      className={bookedTimes.includes(t) ? "text-gray-300" : ""}
+                    >
+                      {bookedTimes.includes(t) ? `${t} — Booked` : t}
+                    </option>
+                  ))}
+                </select>
+                {errors.time && (
+                  <p className="text-red-500">{errors.time.message}</p>
+                )}
               </div>
             </div>
-
             <div className="grid grid-cols-2 mt-2  gap-4 font-semibold ">
               <label htmlFor="date" className="  col-span-2 font-normal">
                 What is your experience level?
@@ -187,7 +357,7 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
+                  {...register("level")}
                   value="beginner"
                   className=" inline outline-none border border-gray-300 rounded px-4 py-2 "
                 />
@@ -199,8 +369,8 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
                   value="some_experience"
+                  {...register("level")}
                   className=" inline outline-none border border-gray-300 rounded px-4 py-2 "
                 />
                 <label htmlFor="experience" className="inline">
@@ -211,8 +381,8 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
                   value="intermediate"
+                  {...register("level")}
                   className=" outline-none border border-gray-300 rounded px-4 py-2 "
                 />
                 <label htmlFor="experience" className="">
@@ -223,8 +393,8 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
                   value="advanced"
+                  {...register("level")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 "
                 />
                 <label htmlFor="experience">Advanced athlete</label>
@@ -233,8 +403,8 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
                   value="returning"
+                  {...register("level")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 "
                 />
                 <label htmlFor="experience">Returning client</label>
@@ -243,21 +413,25 @@ const BookSession = () => {
                 <input
                   type="radio"
                   id="experience"
-                  name="experience"
                   value="other"
+                  {...register("level")}
                   className="outline-none border border-gray-300 rounded px-4 py-2 "
                 />
                 <label htmlFor="experience">Other </label>
               </div>
             </div>
+            {errors.level && (
+              <p className="text-red-500">{errors.level.message}</p>
+            )}
+
             <div className="grid grid-cols-2 mt-2  gap-4 font-semibold">
-              <label htmlFor="notes" className="l">
+              <label htmlFor="goals" className="">
                 Notes
               </label>
               <textarea
-                id="notes"
-                name="notes"
+                id="goals"
                 rows={4}
+                {...register("goals")}
                 className="col-span-2 outline-none border border-gray-300 rounded px-4 py-2 w-full h-64"
                 placeholder="Tell us about your goals"
               ></textarea>
@@ -265,15 +439,17 @@ const BookSession = () => {
             <div className="mt-2  gap-4 space-x-2">
               <input
                 type="checkbox"
-                id="terms"
-                name="terms"
-                required
+                id="agree"
+                {...register("agree")}
                 className="outline-none border border-gray-300 rounded px-4 py-2 "
               />
-              <label htmlFor="terms" className="inline">
+              <label htmlFor="agree" className="inline">
                 I agree to the terms and conditions
               </label>
             </div>
+            {errors.agree && (
+              <p className="text-red-500">{errors.agree.message}</p>
+            )}
             <div className="mx-auto">
               <button
                 type="submit"

@@ -3,7 +3,11 @@
 /* @theme {
   --font-outfit: "Outfit", sans-serif;
   --font-inter: "Inter", sans-serif;
-} */
+}
+   */
+main {
+  min-height: calc(100vh - navbar-height- footer-height);
+}
 h1,
 h2,
 h3,
