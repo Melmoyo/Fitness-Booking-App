@@ -9,7 +9,6 @@ import DateTime from "../assets/select-date-time.jpg";
 import Fitness from "../assets/fitness-program.jpg";
 
 const Home = () => {
-  console.log(Calendar);
   return (
     <>
       {/* Hero Section */}
