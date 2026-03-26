@@ -9,6 +9,7 @@ import DateTime from "../assets/select-date-time.jpg";
 import Fitness from "../assets/fitness-program.jpg";
 
 const Home = () => {
+  console.log(Calendar);
   return (
     <>
       {/* Hero Section */}
@@ -56,7 +57,7 @@ const Home = () => {
               Our training programs
             </h2>
             <p className="text-white ">
-              Pick the program that matches your goals & finess level
+              Pick the program that matches your goals & fitness level
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">

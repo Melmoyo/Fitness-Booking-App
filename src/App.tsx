@@ -18,12 +18,6 @@ function AppWrapper() {
 
   const { session, role, loading, fullName } = UserAuth();
 
-  console.log("APP RENDER:", {
-    loading,
-    session: session?.user?.id ?? "null",
-    role,
-  });
-
   if (loading) {
     return <LoadingSpinner fullPage />;
   }
