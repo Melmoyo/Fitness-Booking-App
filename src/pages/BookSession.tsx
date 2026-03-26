@@ -12,11 +12,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import StrengthTraining from "../assets/strength.jpg";
-import HIIT from "../assets/hiit.jpg";
-import WeightLoss from "../assets/weight-loss.jpg";
-import Calendar from "../assets/confirm-booking.png";
-import DateTime from "../assets/select-date-time.jpg";
-import Fitness from "../assets/fitness-program.jpg";
 
 const userFormSchema = z.object({
   firstName: z
