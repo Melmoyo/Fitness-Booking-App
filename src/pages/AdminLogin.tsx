@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-//import { useState, useEffect } from "react";
 import { supabase } from "../SupabaseClient";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,12 +25,11 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   const onSubmit = async (data: LoginForm) => {
-    
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password,
     });
-    
+
     if (error) {
       alert("Login failed" + error.message);
       return;
@@ -42,19 +40,17 @@ const AdminLogin = () => {
       .select("full_name, role")
       .eq("id", authData.user.id)
       .single();
-   
+
     if (userError || !userData) {
       alert("No user record found ");
       return;
     }
 
     if (userData?.role === "trainer") {
- 
       reset();
 
       navigate("/dashboard");
     } else {
-    
       alert("Access Denied.Not a trainer");
     }
   };

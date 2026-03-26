@@ -10,10 +10,8 @@ import {
 import { useState, useEffect } from "react";
 import { UserAuth } from "../Context/AuthContext";
 import { supabase } from "../SupabaseClient";
-// import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
-  // const navigate = useNavigate();
   const { session } = UserAuth();
   type ModalType = "upcoming" | "past" | null;
   interface Sessions {

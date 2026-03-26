@@ -104,38 +104,6 @@ const ClientDashboard = () => {
   } = cancelForm;
   const { session } = UserAuth();
 
-  // const fetchPastSessions = async () => {
-  //   if (!session?.user) return [];
-
-  //   const { data, error } = await supabase
-  //     .from("bookings")
-  //     .select("*")
-  //     .eq("user_id", session.user.id)
-  //     .lt("booking_date", today);
-
-  //   if (error) {
-  //     alert("Error" + error.message);
-  //     return [];
-  //   }
-
-  //   return data || [];
-  // };
-  // const fetchUpcomingSessions = async () => {
-  //   if (!session?.user) return [];
-
-  //   const { data, error } = await supabase
-  //     .from("bookings")
-  //     .select("*")
-  //     .eq("user_id", session.user.id)
-  //     .gte("booking_date", today);
-
-  //   if (error) {
-  //     alert("Error" + error.message);
-  //     return [];
-  //   }
-
-  //   return data || [];
-  // };
   const fetchSessionTotals = async () => {
     if (!session?.user) return;
 
@@ -654,7 +622,7 @@ const ClientDashboard = () => {
               </div>
             </div>
             <div className="cta-buttons mx-auto grid grid-col-1 place-items-center border-2 border-black rounded-lg px-12 py-20 grid grid-col-1 place-items-center border-2 border-black rounded-lg px-12 py-20 gap-x-4 mt-12">
-              <img src="" />
+              <img src="#" />
               <h3>James Torres</h3>
               <h4>Weight loss coach</h4>
               <p>

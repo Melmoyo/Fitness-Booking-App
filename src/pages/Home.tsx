@@ -1,6 +1,12 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faAngleRight } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import StrengthTraining from "../assets/strength.jpg";
+import HIIT from "../assets/hiit.jpg";
+import WeightLoss from "../assets/weight-loss.jpg";
+import Calendar from "../assets/confirm-booking.png";
+import DateTime from "../assets/select-date-time.jpg";
+import Fitness from "../assets/fitness-program.jpg";
 
 const Home = () => {
   return (
@@ -38,7 +44,7 @@ const Home = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Programs Section */}
       <section className=" px-8 py-20 text-white  bg-black " id="programs">
         <div className="max-w-6xl mx-auto text-center ">
@@ -56,8 +62,9 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-12">
             <div className="strength rounded-lg overflow-hidden flex flex-col  border-1 text-left border-gray-300">
               <img
-                src="/src/assets/strength.jpg"
+                src={StrengthTraining}
                 className="w-full h-56 object-cover"
+                alt="strength training"
               />
               <div className="p-6 flex flex-col gap-3 ">
                 <span className="text-sm uppercase">Strength</span>
@@ -66,7 +73,7 @@ const Home = () => {
                   Build muscle and power with progressive resistance training.
                 </p>
                 <div className="flex items-center ">
-                  < Link to="/book" className="text-white mt-2">
+                  <Link to="/book" className="text-white mt-2">
                     Book
                   </Link>
                   <FontAwesomeIcon icon={faAngleRight} className="mt-3" />
@@ -74,10 +81,7 @@ const Home = () => {
               </div>
             </div>
             <div className="hiit rounded-lg overflow-hidden flex flex-col  border-1 text-left border-gray-300">
-              <img
-                src="/src/assets/hiit.jpg"
-                className="w-full h-56 object-cover"
-              />
+              <img src={HIIT} className="w-full h-56 object-cover" alt="hiit" />
               <div className="p-6 flex flex-col gap-3  ">
                 <span className="text-sm uppercase ">HIIT</span>
                 <h3 className="text-xl  font-semibold">HIIT workouts</h3>
@@ -95,8 +99,9 @@ const Home = () => {
             </div>
             <div className="weightloss rounded-lg  overflow-hidden flex flex-col  border-1 text-left border-gray-300 md:flex-row md:col-span-2">
               <img
-                src="/src/assets/weight-loss.jpg"
+                src={WeightLoss}
                 className=" flex flex-col w-full md:w-1/2 object-cover"
+                alt="weight loss"
               />
               <div className="p-6 flex flex-col justify-center gap-3 md:w-1/2">
                 <span className="text-sm uppercase">Weight Loss</span>
@@ -106,7 +111,6 @@ const Home = () => {
                   guidance.
                 </p>
                 <div className="flex items-center ">
-                
                   <Link to="/book" className="text-white mt-2">
                     Book
                   </Link>
@@ -135,8 +139,9 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 ">
             <div className="">
               <img
-                src="/src/assets/fitness-program.jpg"
+                src={Fitness}
                 className="w-full h-56 mx-auto mb-4 rounded-lg"
+                alt="Workout"
               />
               <h3 className=" text-3xl font-semibold mb-2 md:text-xl">
                 Choose a program
@@ -147,8 +152,9 @@ const Home = () => {
             </div>
             <div className="">
               <img
-                src="/src/assets/select-date-time.jpg"
+                src={DateTime}
                 className="w-full h-56 mx-auto mb-4 rounded-lg"
+                alt="Clock"
               />
 
               <h3 className="text-3xl font-semibold mb-2 md:text-xl">
@@ -161,8 +167,9 @@ const Home = () => {
             </div>
             <div className="">
               <img
-                src="/src/assets/confirm-booking.png"
+                src={Calendar}
                 className="w-full h-56 mx-auto mb-4 rounded-lg"
+                alt="Calendar"
               />
               <h3 className="text-3xl font-semibold mb-2 md:text-xl">
                 Confirm your booking
@@ -178,7 +185,6 @@ const Home = () => {
               >
                 Start Your Journey
               </Link>
-             
             </div>
           </div>
         </div>

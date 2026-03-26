@@ -11,6 +11,12 @@ import { supabase } from "../SupabaseClient";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import StrengthTraining from "../assets/strength.jpg";
+import HIIT from "../assets/hiit.jpg";
+import WeightLoss from "../assets/weight-loss.jpg";
+import Calendar from "../assets/confirm-booking.png";
+import DateTime from "../assets/select-date-time.jpg";
+import Fitness from "../assets/fitness-program.jpg";
 
 const userFormSchema = z.object({
   firstName: z
@@ -45,10 +51,6 @@ const userFormSchema = z.object({
 type UserForm = z.infer<typeof userFormSchema>;
 
 const BookSession = () => {
-  // const form = useForm<UserForm>({
-  //   resolver: zodResolver(userFormSchema),
-  // });
-
   const {
     register,
     handleSubmit,
@@ -186,7 +188,7 @@ const BookSession = () => {
           <div className="grid grid-cols-1 ml-8 md:grid-cols-2 gap-8 mt-12 rounded-xl  border-1 border-gray-300 rounded-md ">
             <div className="h-96  overflow-hidden">
               <img
-                src="/src/assets/strength.jpg"
+                src={StrengthTraining}
                 className="w-full h-full rounded-lg rounded-tr-none rounded-br-none object-cover"
               />
             </div>
