@@ -135,10 +135,10 @@ const ClientSignIn = () => {
   const onSubmit = async (data: SignInForm | SignUpForm) => {
     if (!isSignIn) {
       await handleSignUp(data as SignUpForm);
-      console.log("Signing up with:", data);
+
     } else {
       await handleSignIn(data as SignInForm);
-      console.log("Signing in with:", data);
+      
     }
   };
 
